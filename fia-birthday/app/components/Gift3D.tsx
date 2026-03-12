@@ -431,8 +431,11 @@ function CameraRig({
   const target = useMemo(() => new THREE.Vector3(0, 0.3, 0), []);
 
   useFrame((_, delta) => {
-    const desired = isOpen ? openPosition : closedPosition;
-    camera.position.lerp(desired, 1 - Math.exp(-3 * delta));
+    if (!isOpen) {
+      return;
+    }
+
+    camera.position.lerp(openPosition, 1 - Math.exp(-3 * delta));
     camera.lookAt(target);
 
     if (controlsRef.current) {

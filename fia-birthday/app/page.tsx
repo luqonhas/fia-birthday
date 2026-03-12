@@ -31,9 +31,12 @@ export default function Home() {
     "um presente digital para uma garota nada convencional",
   ];
 
+  // Temporary toggle to jump straight to the 3D gift while testing.
+  const skipIntroForTests = true;
+
   const [index, setIndex] = useState(0);
   const [hideText, setHideText] = useState(false);
-  const [showGift, setShowGift] = useState(false);
+  const [showGift, setShowGift] = useState(skipIntroForTests);
   const [started, setStarted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 

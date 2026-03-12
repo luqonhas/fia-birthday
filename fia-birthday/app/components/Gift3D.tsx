@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, Text, useGLTF } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import type { Group, Mesh, MeshStandardMaterial } from "three";
 import type { GLTF } from "three-stdlib";
@@ -22,12 +22,25 @@ type GiftGLTF = GLTF & {
 
 function PresentModel() {
   const groupRef = useRef<Group | null>(null);
-  const { nodes, materials } = useGLTF("/models/gift.gltf") as GiftGLTF;
+  const { nodes, materials } = useGLTF("./models/gift.gltf") as GiftGLTF;
   const rotationSpeed = useMemo(() => 0.35, []);
   const giftMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial();
     material.color = new THREE.Color("#c81e1e");
     material.roughness = 0.45;
+    return material;
+  }, []);
+  const tagMaterial = useMemo(() => {
+    const material = new THREE.MeshStandardMaterial();
+    material.color = new THREE.Color("#f7f5ee");
+    material.roughness = 0.7;
+    material.metalness = 0.05;
+    return material;
+  }, []);
+  const stringMaterial = useMemo(() => {
+    const material = new THREE.MeshStandardMaterial();
+    material.color = new THREE.Color("#d8c9b6");
+    material.roughness = 0.6;
     return material;
   }, []);
 
@@ -70,6 +83,28 @@ function PresentModel() {
           scale={0.49}
         />
       </mesh>
+      <group position={[0.50, 0.03, 0.27]} rotation={[.3, 1.6, 0]}>
+        <mesh material={tagMaterial}>
+          <boxGeometry args={[0.45, 0.25, 0.03]} />
+        </mesh>
+        <mesh
+          material={stringMaterial}
+          position={[0, 0.6, 0.015]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+        </mesh>
+        <Text
+          position={[0, 0, 0.025]}
+          fontSize={0.075}
+          color="#1a1a1a"
+          anchorX="center"
+          anchorY="middle"
+          lineHeight={1.2}
+          maxWidth={0.62}
+        >
+          {"De: Lucas\nPara: Fia"}
+        </Text>
+      </group>
     </group>
   );
 }
@@ -79,7 +114,10 @@ useGLTF.preload("/models/gift.gltf");
 export default function Gift3D() {
   return (
     <div className="gift-canvas">
-      <Canvas camera={{ position: [3.6, 2.6, 4.1], fov: 35 }} dpr={[1, 2]}>
+      <Canvas
+        camera={{ position: [3.6, 2.6, 4.1], fov: 35, near: 0.1, far: 100 }}
+        dpr={[1, 2]}
+      >
         <ambientLight intensity={0.65} />
         <directionalLight position={[6, 8, 5]} intensity={1.05} />
         <pointLight position={[-3, 1.5, -2]} intensity={0.7} />
@@ -88,10 +126,13 @@ export default function Gift3D() {
           <PresentModel />
         </Suspense>
         <OrbitControls
-          enableZoom={false}
+          enableZoom
           enablePan={false}
           enableDamping
           dampingFactor={0.12}
+          zoomSpeed={0.6}
+          minDistance={3.1}
+          maxDistance={7}
         />
       </Canvas>
     </div>

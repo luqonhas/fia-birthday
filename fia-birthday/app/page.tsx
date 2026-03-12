@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Gift3D from "./components/Gift3D";
 
 const mulberry32 = (seed: number) => {
@@ -34,8 +34,30 @@ export default function Home() {
   const [index, setIndex] = useState(0);
   const [hideText, setHideText] = useState(false);
   const [showGift, setShowGift] = useState(false);
+  const [started, setStarted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleStart = () => {
+    setStarted(true);
+    setIndex(0);
+    setHideText(false);
+    setShowGift(false);
+
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+    audio.currentTime = 0;
+    audio.play().catch((error) => {
+      console.error("Audio play failed", error);
+    });
+  };
 
   useEffect(() => {
+    if (!started) {
+      return;
+    }
+
     if (index < lines.length - 1) {
       const timer = setTimeout(() => {
         setIndex((prev) => prev + 1);
@@ -49,10 +71,10 @@ export default function Home() {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [index, lines.length]);
+  }, [index, lines.length, started]);
 
   useEffect(() => {
-    if (!hideText) {
+    if (!started || !hideText) {
       return;
     }
 
@@ -61,10 +83,11 @@ export default function Home() {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [hideText]);
+  }, [hideText, started]);
 
   return (
     <main className="relative flex h-screen items-center justify-center overflow-hidden bg-black text-white">
+      <audio ref={audioRef} src="/audio/moog-city.mp3" preload="auto" />
       {!showGift && (
         <>
           <div className="particle-field">
@@ -81,18 +104,27 @@ export default function Home() {
               />
             ))}
           </div>
-          <div
-            className={`intro-text relative z-10 max-w-3xl text-center px-6 ${
-              hideText ? "intro-text-hidden" : ""
-            }`}
-          >
-            <h1
-              key={index}
-              className="animate-fade text-3xl font-light leading-snug md:text-5xl"
+          {!started && (
+            <div className="start-overlay">
+              <button className="start-button" onClick={handleStart}>
+                Começar experiência
+              </button>
+            </div>
+          )}
+          {started && (
+            <div
+              className={`intro-text relative z-10 max-w-3xl text-center px-6 ${
+                hideText ? "intro-text-hidden" : ""
+              }`}
             >
-              {lines[index]}
-            </h1>
-          </div>
+              <h1
+                key={index}
+                className="animate-fade text-3xl font-light leading-snug md:text-5xl"
+              >
+                {lines[index]}
+              </h1>
+            </div>
+          )}
         </>
       )}
 

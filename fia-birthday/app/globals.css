@@ -155,6 +155,58 @@ body {
   transform: translateY(-12px);
 }
 
+.start-overlay {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.start-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease,
+    background 0.2s ease, border-color 0.2s ease;
+  animation: float-button 3.6s ease-in-out infinite;
+}
+
+@media (max-width: 640px) {
+  .start-button {
+    padding: 14px 32px;
+    font-size: 1.05rem;
+  }
+}
+
+.start-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes float-button {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
 @keyframes fadeText {
   0% {
     opacity: 0;
@@ -181,3 +233,4 @@ body {
   position: relative;
   aspect-ratio: 1 / 1;
 }
+

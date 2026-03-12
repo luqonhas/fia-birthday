@@ -88,22 +88,22 @@ export default function Home() {
   return (
     <main className="relative flex h-screen items-center justify-center overflow-hidden bg-black text-white">
       <audio ref={audioRef} src="/audio/moog-city.mp3" preload="auto" />
+      <div className="particle-field">
+        {particleSeeds.map((particle) => (
+          <span
+            key={particle.id}
+            className="particle"
+            style={{
+              left: particle.left,
+              top: particle.top,
+              animationDelay: particle.delay,
+              animationDuration: particle.duration,
+            }}
+          />
+        ))}
+      </div>
       {!showGift && (
         <>
-          <div className="particle-field">
-            {particleSeeds.map((particle) => (
-              <span
-                key={particle.id}
-                className="particle"
-                style={{
-                  left: particle.left,
-                  top: particle.top,
-                  animationDelay: particle.delay,
-                  animationDuration: particle.duration,
-                }}
-              />
-            ))}
-          </div>
           {!started && (
             <div className="start-overlay">
               <button className="start-button" onClick={handleStart}>

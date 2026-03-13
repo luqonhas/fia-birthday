@@ -2,11 +2,12 @@
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Sparkles, Text, useGLTF } from "@react-three/drei";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { Group, Mesh, MeshStandardMaterial } from "three";
 import type { GLTF, OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
+import LetterItem from "./LetterItem";
 
 const normalizeAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 const dampAngle = (current: number, target: number, lambda: number, delta: number) => {
@@ -504,27 +505,38 @@ useGLTF.preload("/models/gift.gltf");
 function CameraRig({
   isOpen,
   controlsRef,
+  openTarget,
 }: {
   isOpen: boolean;
   controlsRef: RefObject<OrbitControlsImpl>;
+  openTarget: THREE.Vector3;
 }) {
   const { camera } = useThree();
-  const closedPosition = useMemo(
-    () => new THREE.Vector3(3.6, 2.6, 4.1),
-    []
-  );
-  const openPosition = useMemo(() => new THREE.Vector3(2.2, 4.4, 2.2), []);
-  const target = useMemo(() => new THREE.Vector3(0, 0.3, 0), []);
+  const openOffset = useMemo(() => new THREE.Vector3(1.9, 3.2, 1.8), []);
+  const desiredPosition = useMemo(() => new THREE.Vector3(), []);
+  const hasSettled = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      hasSettled.current = false;
+    }
+  }, [isOpen]);
 
   useFrame((_, delta) => {
     if (!isOpen) {
       return;
     }
-    camera.position.lerp(openPosition, 1 - Math.exp(-3 * delta));
-    camera.lookAt(target);
+    desiredPosition.copy(openTarget).add(openOffset);
+    if (!hasSettled.current) {
+      camera.position.lerp(desiredPosition, 1 - Math.exp(-3 * delta));
+      if (camera.position.distanceTo(desiredPosition) < 0.02) {
+        hasSettled.current = true;
+      }
+    }
+    camera.lookAt(openTarget);
 
     if (controlsRef.current) {
-      controlsRef.current.target.lerp(target, 1 - Math.exp(-3 * delta));
+      controlsRef.current.target.lerp(openTarget, 1 - Math.exp(-6 * delta));
       controlsRef.current.update();
     }
   });
@@ -535,6 +547,13 @@ function CameraRig({
 export default function Gift3D() {
   const [isOpen, setIsOpen] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      controlsRef.current?.reset();
+    }
+  }, [isOpen]);
 
   return (
     <div className="gift-canvas">
@@ -558,7 +577,7 @@ export default function Gift3D() {
         dpr={[1, 2]}
         gl={{ localClippingEnabled: true }}
       >
-        <CameraRig isOpen={isOpen} controlsRef={controlsRef} />
+        <CameraRig isOpen={isOpen} controlsRef={controlsRef} openTarget={letterFocus} />
         <ambientLight intensity={0.7} />
         <directionalLight position={[6, 8, 5]} intensity={isOpen ? 1.55 : 1.05} />
         <pointLight
@@ -590,16 +609,17 @@ export default function Gift3D() {
             }}
           />
         </Suspense>
+        <LetterItem isOpen={isOpen} focusPosition={letterFocus} />
         <OrbitControls
           ref={controlsRef}
-          enableZoom
+          enableZoom={isOpen}
           enableRotate={!isOpen}
           enablePan={false}
           enableDamping
           dampingFactor={0.12}
           zoomSpeed={0.6}
-          minDistance={3.1}
-          maxDistance={7}
+          minDistance={isOpen ? 1.6 : 3.1}
+          maxDistance={isOpen ? 5.5 : 7}
         />
       </Canvas>
     </div>

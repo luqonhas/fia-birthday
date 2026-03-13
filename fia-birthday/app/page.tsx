@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useGLTF } from "@react-three/drei";
 import Gift3D from "./components/Gift3D";
 
 const mulberry32 = (seed: number) => {
@@ -41,6 +42,7 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleStart = () => {
+    useGLTF.preload("/models/gift.gltf");
     setStarted(true);
     setIndex(0);
     setHideText(false);

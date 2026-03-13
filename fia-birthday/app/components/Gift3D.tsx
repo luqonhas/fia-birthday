@@ -180,10 +180,10 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
       closedGroupRef.current.visible = openProgress.current < crossfadeEnd;
     }
     const bowOpacity =
-      1 - THREE.MathUtils.smoothstep(openProgress.current, 0.01, 0.05);
+      1 - THREE.MathUtils.smoothstep(openProgress.current, 0.0, 0.006);
     closedBowMaterial.opacity = bowOpacity;
     if (closedBowRef.current) {
-      closedBowRef.current.visible = bowOpacity > 0.02;
+      closedBowRef.current.visible = bowOpacity > 0.25;
     }
     if (openGroupRef.current) {
       openGroupRef.current.visible = openProgress.current > crossfadeStart;

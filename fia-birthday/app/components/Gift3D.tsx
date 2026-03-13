@@ -143,6 +143,7 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
     mat.opacity = 1;
     return mat;
   }, [materials]);
+  const lastOpenProgress = useRef(0);
 
   useFrame((state, delta) => {
     if (groupRef.current) {
@@ -175,6 +176,8 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
       0,
       1
     );
+    const isClosing = openProgress.current < lastOpenProgress.current;
+    lastOpenProgress.current = openProgress.current;
 
     if (closedGroupRef.current) {
       closedGroupRef.current.visible = openProgress.current < crossfadeEnd;
@@ -186,7 +189,14 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
       closedBowRef.current.visible = bowOpacity > 0.25;
     }
     if (openGroupRef.current) {
-      openGroupRef.current.visible = openProgress.current > crossfadeStart;
+      openGroupRef.current.visible = isClosing
+        ? openProgress.current > 0.14
+        : openProgress.current > crossfadeStart;
+    }
+    if (closedGroupRef.current) {
+      closedGroupRef.current.visible = isClosing
+        ? true
+        : openProgress.current < crossfadeEnd;
     }
 
     if (lidSlideRef.current && bowOffsets) {
@@ -224,13 +234,27 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
 
     const baseOpacity = 1 - crossfadeT;
     const openOpacity = crossfadeT;
-    const isCrossfading = crossfadeT > 0.02 && crossfadeT < 0.98;
-    baseMaterial.opacity = isCrossfading ? baseOpacity : 1;
-    openBoxMaterial.opacity = isCrossfading ? openOpacity : openOpacity > 0.5 ? 1 : 0;
-    innerCavityMaterial.opacity = isCrossfading ? openOpacity : openOpacity > 0.5 ? 1 : 0;
-    baseMaterial.transparent = isCrossfading;
-    openBoxMaterial.transparent = isCrossfading;
-    innerCavityMaterial.transparent = isCrossfading;
+    if (isClosing) {
+      const closingOpenOpacity = THREE.MathUtils.smoothstep(
+        openProgress.current,
+        0.1,
+        0.25
+      );
+      baseMaterial.opacity = 1;
+      baseMaterial.transparent = false;
+      openBoxMaterial.opacity = closingOpenOpacity;
+      innerCavityMaterial.opacity = closingOpenOpacity;
+      openBoxMaterial.transparent = closingOpenOpacity < 0.999;
+      innerCavityMaterial.transparent = closingOpenOpacity < 0.999;
+    } else {
+      const isCrossfading = crossfadeT > 0.02 && crossfadeT < 0.98;
+      baseMaterial.opacity = isCrossfading ? baseOpacity : 1;
+      openBoxMaterial.opacity = isCrossfading ? openOpacity : openOpacity > 0.5 ? 1 : 0;
+      innerCavityMaterial.opacity = isCrossfading ? openOpacity : openOpacity > 0.5 ? 1 : 0;
+      baseMaterial.transparent = isCrossfading;
+      openBoxMaterial.transparent = isCrossfading;
+      innerCavityMaterial.transparent = isCrossfading;
+    }
   });
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
@@ -493,20 +517,21 @@ export default function Gift3D() {
 
   return (
     <div className="gift-canvas">
-      {/* Texto antes de abrir */}
-      {!isOpen && <div className="gift-hint">Clique para abrir o presente...</div>}
-      {isOpen && (
-        <button
-          className="gift-close"
-          type="button"
-          onClick={() => {
+      {/* Botao inferior (abre/fecha) */}
+      <button
+        className={`gift-action ${isOpen ? "gift-action-open" : ""}`}
+        type="button"
+        onClick={() => {
+          if (isOpen) {
             setIsOpen(false);
             controlsRef.current?.reset();
-          }}
-        >
-          Fechar presente
-        </button>
-      )}
+            return;
+          }
+          setIsOpen(true);
+        }}
+      >
+        {isOpen ? "Clique para fechar o presente" : "Clique para abrir o presente..."}
+      </button>
       <Canvas
         camera={{ position: [3.6, 2.6, 4.1], fov: 35, near: 0.1, far: 100 }}
         dpr={[1, 2]}
@@ -537,7 +562,11 @@ export default function Gift3D() {
         <Suspense fallback={null}>
           <PresentModel
             isOpen={isOpen}
-            onOpen={() => setIsOpen(true)}
+            onOpen={() => {
+              if (!isOpen) {
+                setIsOpen(true);
+              }
+            }}
           />
         </Suspense>
         <OrbitControls

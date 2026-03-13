@@ -17,10 +17,7 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
   const [isActive, setIsActive] = useState(false);
   const { camera } = useThree();
 
-  const startPos = useMemo(
-    () => focusPosition.clone().add(new THREE.Vector3(0.7, -1.0, -0.3)),
-    [focusPosition]
-  );
+  const startPos = useMemo(() => new THREE.Vector3(0, 0.2, 0), []);
   const endPos = useMemo(() => focusPosition.clone(), [focusPosition]);
   const tiltQuat = useMemo(
     () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2, 0.2, -0.06)),
@@ -62,9 +59,11 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
       return;
     }
     const target = isActive ? 1 : 0;
-    progress.current = THREE.MathUtils.damp(progress.current, target, 4, delta);
+    const lambda = isActive ? 4 : 6;
+    progress.current = THREE.MathUtils.damp(progress.current, target, lambda, delta);
     const t = progress.current;
-    groupRef.current.position.lerpVectors(startPos, endPos, t);
+    const eased = THREE.MathUtils.smoothstep(t, 0, 1);
+    groupRef.current.position.lerpVectors(startPos, endPos, eased);
     const time = state.clock.elapsedTime;
     const floatY = Math.sin(time * 1.2) * 0.03;
     const floatX = Math.sin(time * 0.7) * 0.01;

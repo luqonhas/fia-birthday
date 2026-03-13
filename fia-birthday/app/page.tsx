@@ -33,7 +33,7 @@ export default function Home() {
   ];
 
   // Temporary toggle to jump straight to the 3D gift while testing.
-  const skipIntroForTests = true;
+  const skipIntroForTests = false;
 
   const [index, setIndex] = useState(0);
   const [hideText, setHideText] = useState(false);

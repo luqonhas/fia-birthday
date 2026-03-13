@@ -81,7 +81,6 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
   const groupRef = useRef<Group | null>(null);
   const closedGroupRef = useRef<Group | null>(null);
   const closedBowRef = useRef<Group | null>(null);
-  const closedRibbonRef = useRef<Mesh | null>(null);
   const openGroupRef = useRef<Group | null>(null);
   const lidSlideRef = useRef<Group | null>(null);
   const clickRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -151,7 +150,7 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
   }, [materials]);
   const closedRibbonMaterial = useMemo(() => {
     const mat = materials.Palette.clone();
-    mat.transparent = true;
+    mat.transparent = false;
     mat.opacity = 1;
     return mat;
   }, [materials]);
@@ -165,14 +164,16 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
         4,
         delta
       );
-      if (lidData) {
-        const cutY = lidData.size.y / 2 - lidData.thickness * 0.2;
-        openRibbonClipLocal.constant = cutY;
-        openRibbonClipPlane
-          .copy(openRibbonClipLocal)
-          .applyMatrix4(groupRef.current.matrixWorld);
-        openSideRibbonMaterial.clippingPlanes = [openRibbonClipPlane];
-      }
+    if (lidData) {
+      const cutY = lidData.size.y / 2 - lidData.thickness * 0.2;
+      openRibbonClipLocal.constant = cutY;
+      openRibbonClipPlane
+        .copy(openRibbonClipLocal)
+        .applyMatrix4(groupRef.current.matrixWorld);
+      openSideRibbonMaterial.clippingPlanes = [openRibbonClipPlane];
+      closedRibbonMaterial.clippingPlanes =
+        openProgress.current > 0.02 ? [openRibbonClipPlane] : null;
+    }
       if (openProgress.current < 0.02) {
         groupRef.current.rotation.y += delta * rotationSpeed;
       } else {
@@ -207,13 +208,6 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
     closedBowMaterial.opacity = bowOpacity;
     if (closedBowRef.current) {
       closedBowRef.current.visible = bowOpacity > 0.25;
-    }
-    const ribbonOpacity =
-      1 - THREE.MathUtils.smoothstep(openProgress.current, 0.0, 0.04);
-    closedRibbonMaterial.opacity = ribbonOpacity;
-    closedRibbonMaterial.transparent = ribbonOpacity < 0.999;
-    if (closedRibbonRef.current) {
-      closedRibbonRef.current.visible = ribbonOpacity > 0.05;
     }
     if (openGroupRef.current) {
       openGroupRef.current.visible = isClosing
@@ -343,7 +337,6 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
             />
           </group>
           <mesh
-            ref={closedRibbonRef}
             geometry={nodes.ribbons.geometry}
             material={closedRibbonMaterial}
             scale={0.49}

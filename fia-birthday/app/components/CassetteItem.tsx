@@ -22,6 +22,7 @@ type CassettePose = {
 export default function CassetteItem({ isOpen, focusPosition }: CassetteItemProps) {
   const groupRef = useRef<THREE.Group | null>(null);
   const cassetteRefs = useRef<Array<THREE.Group | null>>([]);
+  const buttonRefs = useRef<Array<THREE.Group | null>>([]);
   const topTapeRef = useRef<THREE.Group | null>(null);
   const progress = useRef(0);
   const openStartRef = useRef<number | null>(null);
@@ -41,6 +42,14 @@ export default function CassetteItem({ isOpen, focusPosition }: CassetteItemProp
   );
   const floatEuler = useMemo(() => new THREE.Euler(), []);
   const floatQuat = useMemo(() => new THREE.Quaternion(), []);
+  const playShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.06, -0.04);
+    shape.lineTo(0.06, 0);
+    shape.lineTo(-0.06, 0.04);
+    shape.closePath();
+    return shape;
+  }, []);
 
   const cassettePoses = useMemo<CassettePose[]>(
     () => [
@@ -132,25 +141,44 @@ export default function CassetteItem({ isOpen, focusPosition }: CassetteItemProp
   const handlePointerDown = (event: ThreeEvent<PointerEvent>, index: number) => {
     event.stopPropagation();
     focusIndexRef.current = focusIndexRef.current === index ? null : index;
+  };
 
+  const handlePlay = (event: ThreeEvent<PointerEvent>, index: number) => {
+    event.stopPropagation();
     const audio = audioRefs.current[index];
     if (!audio) {
       return;
     }
+    if (playingIndexRef.current !== index) {
+      stopAllAudio();
+    }
+    audio.play().catch((error) => {
+      console.error("Audio play failed", error);
+    });
+    playingIndexRef.current = index;
+  };
 
-    if (playingIndexRef.current === index) {
-      if (audio.paused) {
-        audio.play().catch((error) => {
-          console.error("Audio play failed", error);
-        });
-      } else {
-        audio.pause();
-        playingIndexRef.current = null;
-      }
+  const handlePause = (event: ThreeEvent<PointerEvent>, index: number) => {
+    event.stopPropagation();
+    const audio = audioRefs.current[index];
+    if (!audio) {
       return;
     }
+    audio.pause();
+    if (playingIndexRef.current === index) {
+      playingIndexRef.current = null;
+    }
+  };
 
-    stopAllAudio();
+  const handleRestart = (event: ThreeEvent<PointerEvent>, index: number) => {
+    event.stopPropagation();
+    const audio = audioRefs.current[index];
+    if (!audio) {
+      return;
+    }
+    if (playingIndexRef.current !== index) {
+      stopAllAudio();
+    }
     audio.currentTime = 0;
     audio.play().catch((error) => {
       console.error("Audio play failed", error);
@@ -215,7 +243,7 @@ export default function CassetteItem({ isOpen, focusPosition }: CassetteItemProp
         delta
       );
       focusAmounts.current[index] = focusValue;
-      ref.position.z += focusValue * 0.2;
+      ref.position.z += focusValue * 0.32;
       ref.position.y += focusValue * 0.04;
       ref.rotation.set(
         0,
@@ -224,6 +252,13 @@ export default function CassetteItem({ isOpen, focusPosition }: CassetteItemProp
       );
       ref.scale.setScalar(0.92 + easedT * 0.08 + focusValue * 0.12);
       ref.visible = localT > 0.02;
+
+      const buttons = buttonRefs.current[index];
+      if (buttons) {
+        buttons.visible = focusValue > 0.2;
+        buttons.position.set(0, -0.18, 0.09);
+        buttons.scale.setScalar(0.85 + focusValue * 0.15);
+      }
     });
 
     const topTapeT = THREE.MathUtils.clamp((elapsed - 1.2) / 1.1, 0, 1);
@@ -280,6 +315,53 @@ export default function CassetteItem({ isOpen, focusPosition }: CassetteItemProp
             <planeGeometry args={[0.6, 0.12]} />
             <meshStandardMaterial color="#0f0f0f" roughness={0.8} />
           </mesh>
+          <group
+            ref={(node) => {
+              buttonRefs.current[index] = node;
+            }}
+            visible={false}
+          >
+            <group position={[-0.22, 0, 0]}>
+              <mesh onPointerDown={(event) => handlePlay(event, index)}>
+                <boxGeometry args={[0.2, 0.08, 0.02]} />
+                <meshStandardMaterial color="#f1d7a6" roughness={0.6} />
+              </mesh>
+              <mesh position={[0, 0, 0.02]}>
+                <shapeGeometry args={[playShape]} />
+                <meshStandardMaterial color="#1a1a1a" roughness={0.6} />
+              </mesh>
+            </group>
+            <group position={[0.0, 0, 0]}>
+              <mesh onPointerDown={(event) => handlePause(event, index)}>
+                <boxGeometry args={[0.2, 0.08, 0.02]} />
+                <meshStandardMaterial color="#f1d7a6" roughness={0.6} />
+              </mesh>
+              <mesh position={[-0.025, 0, 0.02]}>
+                <boxGeometry args={[0.03, 0.06, 0.01]} />
+                <meshStandardMaterial color="#1a1a1a" roughness={0.6} />
+              </mesh>
+              <mesh position={[0.025, 0, 0.02]}>
+                <boxGeometry args={[0.03, 0.06, 0.01]} />
+                <meshStandardMaterial color="#1a1a1a" roughness={0.6} />
+              </mesh>
+            </group>
+            <group position={[0.22, 0, 0]}>
+              <mesh onPointerDown={(event) => handleRestart(event, index)}>
+                <boxGeometry args={[0.2, 0.08, 0.02]} />
+                <meshStandardMaterial color="#f1d7a6" roughness={0.6} />
+              </mesh>
+              <group position={[0, 0, 0.02]}>
+                <mesh rotation={[0, 0, 0.6]}>
+                  <torusGeometry args={[0.038, 0.007, 8, 24, Math.PI * 1.4]} />
+                  <meshStandardMaterial color="#1a1a1a" roughness={0.6} />
+                </mesh>
+                <mesh position={[0.035, 0.02, 0]}>
+                  <shapeGeometry args={[playShape]} />
+                  <meshStandardMaterial color="#1a1a1a" roughness={0.6} />
+                </mesh>
+              </group>
+            </group>
+          </group>
         </group>
       ))}
 

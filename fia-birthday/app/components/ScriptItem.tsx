@@ -12,13 +12,28 @@ type ScriptItemProps = {
 
 export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
   const groupRef = useRef<THREE.Group | null>(null);
+  const scriptGroupRef = useRef<THREE.Group | null>(null);
+  const letterGroupRef = useRef<THREE.Group | null>(null);
   const progress = useRef(0);
+  const scriptProgress = useRef(0);
+  const letterProgress = useRef(0);
+  const openStartRef = useRef<number | null>(null);
   const timeoutsRef = useRef<number[]>([]);
   const isActiveRef = useRef(false);
   const { camera } = useThree();
 
   const startPos = useMemo(() => new THREE.Vector3(0, 0.2, 0), []);
   const endPos = useMemo(() => focusPosition.clone(), [focusPosition]);
+  const scriptEnd = useMemo(() => new THREE.Vector3(-0.35, 0.05, 0), []);
+  const scriptStart = useMemo(
+    () => new THREE.Vector3(-0.35, -0.42, 0.05),
+    []
+  );
+  const letterEnd = useMemo(() => new THREE.Vector3(0.68, 0.02, 0.05), []);
+  const letterStart = useMemo(
+    () => new THREE.Vector3(0.68, -0.5, 0.03),
+    []
+  );
   const tiltQuat = useMemo(
     () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.18, 0.34, -0.04)),
     []
@@ -55,6 +70,9 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
     if (!isOpen) {
       isActiveRef.current = false;
       progress.current = 0;
+      scriptProgress.current = 0;
+      letterProgress.current = 0;
+      openStartRef.current = null;
       return;
     }
 
@@ -92,11 +110,53 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
       .multiply(floatQuat);
     groupRef.current.scale.setScalar(0.88 + t * 0.12);
     groupRef.current.visible = t > 0.01;
+
+    if (!scriptGroupRef.current || !letterGroupRef.current) {
+      return;
+    }
+
+    if (!isActiveRef.current) {
+      scriptGroupRef.current.visible = false;
+      letterGroupRef.current.visible = false;
+      return;
+    }
+
+    if (openStartRef.current === null) {
+      openStartRef.current = state.clock.elapsedTime;
+    }
+
+    const elapsed = state.clock.elapsedTime - openStartRef.current;
+    const scriptTarget = THREE.MathUtils.clamp(elapsed / 0.8, 0, 1);
+    const letterTarget = THREE.MathUtils.clamp((elapsed - 0.6) / 0.8, 0, 1);
+
+    scriptProgress.current = THREE.MathUtils.damp(
+      scriptProgress.current,
+      scriptTarget,
+      6,
+      delta
+    );
+    letterProgress.current = THREE.MathUtils.damp(
+      letterProgress.current,
+      letterTarget,
+      6,
+      delta
+    );
+
+    const scriptEase = THREE.MathUtils.smoothstep(scriptProgress.current, 0, 1);
+    const letterEase = THREE.MathUtils.smoothstep(letterProgress.current, 0, 1);
+
+    scriptGroupRef.current.position.lerpVectors(scriptStart, scriptEnd, scriptEase);
+    scriptGroupRef.current.scale.setScalar(0.92 + scriptEase * 0.08);
+    scriptGroupRef.current.visible = scriptProgress.current > 0.02;
+
+    letterGroupRef.current.position.lerpVectors(letterStart, letterEnd, letterEase);
+    letterGroupRef.current.scale.setScalar(0.92 + letterEase * 0.08);
+    letterGroupRef.current.visible = letterProgress.current > 0.02;
   });
 
   return (
     <group ref={groupRef} visible={false}>
-      <group position={[-0.35, 0.05, 0]} rotation={[0, 0, -0.05]}>
+      <group ref={scriptGroupRef} position={scriptEnd} rotation={[0, 0, -0.05]}>
         {sheetOffsets.map((offset, index) => (
           <mesh
             key={`sheet-${index}`}
@@ -135,7 +195,7 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
         </Text>
       </group>
 
-      <group position={[0.68, 0.02, 0.05]} rotation={[0, 0, 0.04]}>
+      <group ref={letterGroupRef} position={letterEnd} rotation={[0, 0, 0.04]}>
         <mesh>
           <boxGeometry args={[1.1, 1.1, 0.01]} />
           <meshStandardMaterial

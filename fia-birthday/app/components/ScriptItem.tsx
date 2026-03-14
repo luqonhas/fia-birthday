@@ -29,11 +29,13 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
     () => new THREE.Vector3(-0.35, -0.42, 0.05),
     []
   );
+  const scriptOvershoot = useMemo(() => new THREE.Vector3(-0.35, 0.12, 0), []);
   const letterEnd = useMemo(() => new THREE.Vector3(0.68, 0.02, 0.05), []);
   const letterStart = useMemo(
     () => new THREE.Vector3(0.68, -0.5, 0.03),
     []
   );
+  const letterOvershoot = useMemo(() => new THREE.Vector3(0.68, 0.09, 0.05), []);
   const tiltQuat = useMemo(
     () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.18, 0.34, -0.04)),
     []
@@ -42,6 +44,8 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
   const floatQuat = useMemo(() => new THREE.Quaternion(), []);
 
   const sheetSize = useMemo(() => new THREE.Vector3(1.25, 1.82, 0.01), []);
+  const scriptUp = useMemo(() => new THREE.Vector3(), []);
+  const letterUp = useMemo(() => new THREE.Vector3(), []);
   const sheetOffsets = useMemo(
     () => [
       new THREE.Vector3(0.0, 0.0, 0.0),
@@ -126,8 +130,8 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
     }
 
     const elapsed = state.clock.elapsedTime - openStartRef.current;
-    const scriptTarget = THREE.MathUtils.clamp(elapsed / 0.8, 0, 1);
-    const letterTarget = THREE.MathUtils.clamp((elapsed - 0.6) / 0.8, 0, 1);
+    const scriptTarget = THREE.MathUtils.clamp(elapsed / 1.35, 0, 1);
+    const letterTarget = THREE.MathUtils.clamp((elapsed - 0.9) / 1.15, 0, 1);
 
     scriptProgress.current = THREE.MathUtils.damp(
       scriptProgress.current,
@@ -144,13 +148,35 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
 
     const scriptEase = THREE.MathUtils.smoothstep(scriptProgress.current, 0, 1);
     const letterEase = THREE.MathUtils.smoothstep(letterProgress.current, 0, 1);
+    const scriptOvershootT = THREE.MathUtils.clamp(
+      (scriptProgress.current - 0.75) / 0.25,
+      0,
+      1
+    );
+    const letterOvershootT = THREE.MathUtils.clamp(
+      (letterProgress.current - 0.78) / 0.22,
+      0,
+      1
+    );
 
-    scriptGroupRef.current.position.lerpVectors(scriptStart, scriptEnd, scriptEase);
+    scriptUp.lerpVectors(scriptStart, scriptOvershoot, scriptEase);
+    scriptGroupRef.current.position.lerpVectors(
+      scriptUp,
+      scriptEnd,
+      scriptOvershootT
+    );
     scriptGroupRef.current.scale.setScalar(0.92 + scriptEase * 0.08);
+    scriptGroupRef.current.rotation.z = -0.05 + (1 - scriptEase) * 0.08;
     scriptGroupRef.current.visible = scriptProgress.current > 0.02;
 
-    letterGroupRef.current.position.lerpVectors(letterStart, letterEnd, letterEase);
+    letterUp.lerpVectors(letterStart, letterOvershoot, letterEase);
+    letterGroupRef.current.position.lerpVectors(
+      letterUp,
+      letterEnd,
+      letterOvershootT
+    );
     letterGroupRef.current.scale.setScalar(0.92 + letterEase * 0.08);
+    letterGroupRef.current.rotation.z = 0.04 + (1 - letterEase) * -0.07;
     letterGroupRef.current.visible = letterProgress.current > 0.02;
   });
 

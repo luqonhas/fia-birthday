@@ -10,6 +10,7 @@ import * as THREE from "three";
 import LetterItem from "./LetterItem";
 import ScriptItem from "./ScriptItem";
 import PolaroidItem from "./PolaroidItem";
+import CassetteItem from "./CassetteItem";
 
 const normalizeAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 const dampAngle = (current: number, target: number, lambda: number, delta: number) => {
@@ -550,7 +551,7 @@ export default function Gift3D() {
   const [isOpen, setIsOpen] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
-  const activeItem = "polaroids";
+  const activeItem = "cassettes";
 
   useEffect(() => {
     if (!isOpen) {
@@ -620,6 +621,9 @@ export default function Gift3D() {
         )}
         {activeItem === "polaroids" && (
           <PolaroidItem isOpen={isOpen} focusPosition={letterFocus} />
+        )}
+        {activeItem === "cassettes" && (
+          <CassetteItem isOpen={isOpen} focusPosition={letterFocus} />
         )}
         <OrbitControls
           ref={controlsRef}

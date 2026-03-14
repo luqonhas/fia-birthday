@@ -199,12 +199,15 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
           </mesh>
         ))}
 
-        <mesh position={[sheetSize.x * (-0.42), sheetSize.y * 0.42, 0.05]}>
-          <boxGeometry args={[0.08, 0.02, 0.04]} />
-          <meshStandardMaterial color="#a9a9a9" roughness={0.35} metalness={0.1} />
+        <mesh
+          position={[sheetSize.x * -0.43, sheetSize.y * 0.43, 0.08]}
+          rotation={[0, 0, 0.6]}
+        >
+          <boxGeometry args={[0.08, 0.02, 0.01]} />
+          <meshStandardMaterial color="#b7b7b7" roughness={0.25} metalness={0.1} />
         </mesh>
 
-        <mesh position={[-sheetSize.x * 0.36, -sheetSize.y * 0.4, 0.05]}>
+        <mesh position={[-sheetSize.x * 0.26, -sheetSize.y * 0.4, 0.05]}>
           <boxGeometry args={[0.42, 0.16, 0.02]} />
           <meshStandardMaterial color="#f1d7a6" roughness={0.7} />
         </mesh>
@@ -222,6 +225,10 @@ export default function ScriptItem({ isOpen, focusPosition }: ScriptItemProps) {
       </group>
 
       <group ref={letterGroupRef} position={letterEnd} rotation={[0, 0, 0.04]}>
+        <mesh position={[-0.35, -0.08, -0.03]} renderOrder={1}>
+          <planeGeometry args={[0.5, 1.0]} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.06} />
+        </mesh>
         <mesh>
           <boxGeometry args={[1.1, 1.1, 0.01]} />
           <meshStandardMaterial

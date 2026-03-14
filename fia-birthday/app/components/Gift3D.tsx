@@ -8,6 +8,7 @@ import type { Group, Mesh, MeshStandardMaterial } from "three";
 import type { GLTF, OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import LetterItem from "./LetterItem";
+import ScriptItem from "./ScriptItem";
 
 const normalizeAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 const dampAngle = (current: number, target: number, lambda: number, delta: number) => {
@@ -165,16 +166,16 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
         4,
         delta
       );
-    if (lidData) {
-      const cutY = lidData.size.y / 2 - lidData.thickness * 0.2;
-      openRibbonClipLocal.constant = cutY;
-      openRibbonClipPlane
-        .copy(openRibbonClipLocal)
-        .applyMatrix4(groupRef.current.matrixWorld);
-      openSideRibbonMaterial.clippingPlanes = [openRibbonClipPlane];
-      closedRibbonMaterial.clippingPlanes =
-        openProgress.current > 0.02 ? [openRibbonClipPlane] : null;
-    }
+      if (lidData) {
+        const cutY = lidData.size.y / 2 - lidData.thickness * 0.2;
+        openRibbonClipLocal.constant = cutY;
+        openRibbonClipPlane
+          .copy(openRibbonClipLocal)
+          .applyMatrix4(groupRef.current.matrixWorld);
+        openSideRibbonMaterial.clippingPlanes = [openRibbonClipPlane];
+        closedRibbonMaterial.clippingPlanes =
+          openProgress.current > 0.02 ? [openRibbonClipPlane] : null;
+      }
       if (openProgress.current < 0.02) {
         groupRef.current.rotation.y += delta * rotationSpeed;
       } else {
@@ -318,20 +319,20 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
           <group ref={closedBowRef}>
             <mesh
               geometry={nodes.NurbsPath.geometry}
-              material={closedBowMaterial}
+                material={closedBowMaterial}
               position={[-0.1, 0.4, -0.18]}
               scale={0.49}
             />
             <mesh
               geometry={nodes.NurbsPath001.geometry}
-              material={closedBowMaterial}
+                material={closedBowMaterial}
               position={[-0.09, 0.4, 0.52]}
               rotation={[-Math.PI, 1.39, -Math.PI]}
               scale={0.49}
             />
             <mesh
               geometry={nodes.topribbons.geometry}
-              material={closedBowMaterial}
+                material={closedBowMaterial}
               position={[0.01, 0.67, -0.01]}
               rotation={[0, -Math.PI / 4, 0]}
               scale={0.49}
@@ -371,7 +372,7 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
           <group scale={[1.02, 1.02, 1.02]}>
             <mesh
               geometry={nodes.ribbons.geometry}
-              material={openSideRibbonMaterial}
+                material={openSideRibbonMaterial}
               scale={0.49}
             />
           </group>
@@ -548,6 +549,7 @@ export default function Gift3D() {
   const [isOpen, setIsOpen] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
+  const activeItem = "script";
 
   useEffect(() => {
     if (!isOpen) {
@@ -570,7 +572,7 @@ export default function Gift3D() {
           setIsOpen(true);
         }}
       >
-        {isOpen ? "Clique para fechar o presente" : "Clique para abrir o presente..."}
+        {isOpen ? "Fechar o presente..." : "Abrir o presente..."}
       </button>
       <Canvas
         camera={{ position: [3.6, 2.6, 4.1], fov: 35, near: 0.1, far: 100 }}
@@ -609,7 +611,12 @@ export default function Gift3D() {
             }}
           />
         </Suspense>
-        <LetterItem isOpen={isOpen} focusPosition={letterFocus} />
+        {activeItem === "letter" && (
+          <LetterItem isOpen={isOpen} focusPosition={letterFocus} />
+        )}
+        {activeItem === "script" && (
+          <ScriptItem isOpen={isOpen} focusPosition={letterFocus} />
+        )}
         <OrbitControls
           ref={controlsRef}
           enableZoom={isOpen}

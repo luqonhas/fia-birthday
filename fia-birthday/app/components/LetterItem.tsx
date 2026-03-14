@@ -2,7 +2,7 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 type LetterItemProps = {
@@ -14,7 +14,7 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
   const groupRef = useRef<THREE.Group | null>(null);
   const progress = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
-  const [isActive, setIsActive] = useState(false);
+  const isActiveRef = useRef(false);
   const { camera } = useThree();
 
   const startPos = useMemo(() => new THREE.Vector3(0, 0.2, 0), []);
@@ -38,13 +38,13 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
     timeoutsRef.current.forEach((timer) => clearTimeout(timer));
     timeoutsRef.current = [];
     if (!isOpen) {
-      setIsActive(false);
+      isActiveRef.current = false;
       progress.current = 0;
       return;
     }
 
     const activationTimer = window.setTimeout(() => {
-      setIsActive(true);
+      isActiveRef.current = true;
     }, 1000);
     timeoutsRef.current.push(activationTimer);
 
@@ -58,8 +58,8 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
     if (!groupRef.current) {
       return;
     }
-    const target = isActive ? 1 : 0;
-    const lambda = isActive ? 4 : 6;
+    const target = isActiveRef.current ? 1 : 0;
+    const lambda = isActiveRef.current ? 4 : 6;
     progress.current = THREE.MathUtils.damp(progress.current, target, lambda, delta);
     const t = progress.current;
     const eased = THREE.MathUtils.smoothstep(t, 0, 1);

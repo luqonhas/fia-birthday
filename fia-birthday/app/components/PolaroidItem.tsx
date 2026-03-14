@@ -1,7 +1,7 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -25,6 +25,8 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
   const timeoutsRef = useRef<number[]>([]);
   const isActiveRef = useRef(false);
   const { camera } = useThree();
+  const focusIndexRef = useRef<number | null>(null);
+  const focusAmounts = useRef<number[]>([]);
 
   const startPos = useMemo(() => new THREE.Vector3(0, 0.2, 0), []);
   const endPos = useMemo(() => focusPosition.clone(), [focusPosition]);
@@ -38,19 +40,19 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
   const polaroidPoses = useMemo<PolaroidPose[]>(
     () => [
       {
-        position: new THREE.Vector3(-0.7, 0.15, 0.08),
+        position: new THREE.Vector3(-0.82, 0.18, 0.08),
         rotation: new THREE.Euler(0, 0, -0.14),
       },
       {
-        position: new THREE.Vector3(-0.22, 0.38, 0.05),
+        position: new THREE.Vector3(-0.28, 0.44, 0.05),
         rotation: new THREE.Euler(0, 0, 0.08),
       },
       {
-        position: new THREE.Vector3(0.28, 0.12, 0.1),
+        position: new THREE.Vector3(0.34, 0.12, 0.1),
         rotation: new THREE.Euler(0, 0, -0.05),
       },
       {
-        position: new THREE.Vector3(0.72, 0.32, 0.02),
+        position: new THREE.Vector3(0.86, 0.36, 0.02),
         rotation: new THREE.Euler(0, 0, 0.12),
       },
     ],
@@ -62,8 +64,8 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
     [polaroidPoses]
   );
 
-  const topTapePos = useMemo(() => new THREE.Vector3(0, 0.92, 0.12), []);
-  const bottomTapePos = useMemo(() => new THREE.Vector3(0, -0.64, 0.12), []);
+  const topTapePos = useMemo(() => new THREE.Vector3(0, 1.02, 0.12), []);
+  const bottomTapePos = useMemo(() => new THREE.Vector3(0, -0.75, 0.12), []);
   const tapeStartOffset = useMemo(() => new THREE.Vector3(0, -0.5, 0), []);
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
       isActiveRef.current = false;
       progress.current = 0;
       openStartRef.current = null;
+      focusIndexRef.current = null;
       return;
     }
 
@@ -86,6 +89,15 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
       timeoutsRef.current = [];
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    focusAmounts.current = polaroidPoses.map(() => 0);
+  }, [polaroidPoses]);
+
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>, index: number) => {
+    event.stopPropagation();
+    focusIndexRef.current = focusIndexRef.current === index ? null : index;
+  };
 
   useFrame((state, delta) => {
     if (!groupRef.current) {
@@ -139,8 +151,17 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
       const localT = THREE.MathUtils.clamp((elapsed - delay) / 1.2, 0, 1);
       const easedT = THREE.MathUtils.smoothstep(localT, 0, 1);
       ref.position.lerpVectors(polaroidStart[index], polaroidPoses[index].position, easedT);
-      ref.rotation.set(0, 0, polaroidPoses[index].rotation.z);
-      ref.scale.setScalar(0.9 + easedT * 0.1);
+      const focusTarget = focusIndexRef.current === index ? 1 : 0;
+      const focusValue = THREE.MathUtils.damp(
+        focusAmounts.current[index] ?? 0,
+        focusTarget,
+        6,
+        delta
+      );
+      focusAmounts.current[index] = focusValue;
+      ref.position.z += focusValue * 0.18;
+      ref.rotation.set(0, 0, THREE.MathUtils.lerp(polaroidPoses[index].rotation.z, 0, focusValue));
+      ref.scale.setScalar(0.9 + easedT * 0.1 + focusValue * 0.12);
       ref.visible = localT > 0.02;
     });
 
@@ -177,17 +198,18 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
             polaroidRefs.current[index] = node;
           }}
           position={pose.position}
+          onPointerDown={(event) => handlePointerDown(event, index)}
         >
           <mesh>
-            <boxGeometry args={[0.7, 0.85, 0.03]} />
+            <boxGeometry args={[0.84, 1.02, 0.03]} />
             <meshStandardMaterial color="#f6f2ea" roughness={0.9} metalness={0.02} />
           </mesh>
           <mesh position={[0, 0.08, 0.02]}>
-            <planeGeometry args={[0.58, 0.52]} />
+            <planeGeometry args={[0.7, 0.62]} />
             <meshStandardMaterial color="#d7d7d7" roughness={0.8} />
           </mesh>
-          <mesh position={[0, -0.26, 0.02]}>
-            <planeGeometry args={[0.58, 0.16]} />
+          <mesh position={[0, -0.32, 0.02]}>
+            <planeGeometry args={[0.7, 0.19]} />
             <meshStandardMaterial color="#f6f2ea" roughness={0.9} />
           </mesh>
         </group>
@@ -195,16 +217,16 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
 
       <group ref={topTapeRef} position={topTapePos}>
         <mesh>
-          <boxGeometry args={[1.55, 0.16, 0.02]} />
+          <boxGeometry args={[1.75, 0.16, 0.02]} />
           <meshStandardMaterial color="#f1d7a6" roughness={0.7} />
         </mesh>
         <Text
           position={[0, 0, 0.02]}
-          fontSize={0.045}
+          fontSize={0.05}
           color="#1a1a1a"
           anchorX="center"
           anchorY="middle"
-          maxWidth={1.35}
+          maxWidth={1.55}
         >
           {"você sorri de um jeito que muda o ambiente..."}
         </Text>
@@ -212,16 +234,16 @@ export default function PolaroidItem({ isOpen, focusPosition }: PolaroidItemProp
 
       <group ref={bottomTapeRef} position={bottomTapePos}>
         <mesh>
-          <boxGeometry args={[1.25, 0.16, 0.02]} />
+          <boxGeometry args={[1.45, 0.16, 0.02]} />
           <meshStandardMaterial color="#f1d7a6" roughness={0.7} />
         </mesh>
         <Text
           position={[0, 0, 0.02]}
-          fontSize={0.045}
+          fontSize={0.05}
           color="#1a1a1a"
           anchorX="center"
           anchorY="middle"
-          maxWidth={1.1}
+          maxWidth={1.3}
         >
           {"... eu sou maluco no seu sorriso"}
         </Text>

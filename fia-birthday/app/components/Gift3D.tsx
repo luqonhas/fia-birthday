@@ -575,7 +575,7 @@ export default function Gift3D() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setShowAction(true);
-    }, 3000);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 

@@ -150,9 +150,9 @@ export default function Home() {
       return;
     }
 
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setShowGift(true);
-    }, 500);
+    }, 0);
 
     return () => clearTimeout(timer);
   }, [hideText, started]);
@@ -279,7 +279,7 @@ export default function Home() {
       )}
 
       {showGift && (
-        <div className="gift-stage">
+        <div className="gift-stage gift-stage-bounce">
           <Gift3D />
         </div>
       )}

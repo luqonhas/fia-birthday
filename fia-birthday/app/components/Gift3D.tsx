@@ -89,6 +89,7 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
   const lidSlideRef = useRef<Group | null>(null);
   const clickRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const openProgress = useRef(0);
+  const hasInitialFacing = useRef(false);
   const { nodes, materials } = useGLTF("/models/gift.gltf") as GiftGLTF;
   const rotationSpeed = useMemo(() => 0.35, []);
   const openYaw = useMemo(() => {
@@ -168,6 +169,10 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
         4,
         delta
       );
+      if (!hasInitialFacing.current) {
+        groupRef.current.rotation.y = openYaw;
+        hasInitialFacing.current = true;
+      }
       if (lidData) {
         const cutY = lidData.size.y / 2 - lidData.thickness * 0.2;
         openRibbonClipLocal.constant = cutY;

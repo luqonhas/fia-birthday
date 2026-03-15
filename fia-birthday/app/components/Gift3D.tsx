@@ -549,9 +549,17 @@ function CameraRig({
 
 export default function Gift3D() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAction, setShowAction] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
-  const activeItem = "cassettes";
+  const activeItem = "script";
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowAction(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -563,7 +571,9 @@ export default function Gift3D() {
     <div className="gift-canvas">
       {/* Botao inferior (abre/fecha) */}
       <button
-        className={`gift-action ${isOpen ? "gift-action-open" : ""}`}
+        className={`gift-action ${isOpen ? "gift-action-open" : ""} ${
+          showAction ? "" : "gift-action-hidden"
+        }`}
         type="button"
         onClick={() => {
           if (isOpen) {

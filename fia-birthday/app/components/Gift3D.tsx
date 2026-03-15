@@ -166,7 +166,7 @@ function PresentModel({ isOpen, onOpen }: PresentModelProps) {
       openProgress.current = THREE.MathUtils.damp(
         openProgress.current,
         isOpen ? 1 : 0,
-        4,
+        isOpen ? 4 : 7,
         delta
       );
       if (!hasInitialFacing.current) {
@@ -558,6 +558,19 @@ export default function Gift3D() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
   const activeItem = "script";
+  const openAudioRef = useRef<HTMLAudioElement | null>(null);
+  const closeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const openAudio = new Audio("/audio/open-chest.mp3");
+    const closeAudio = new Audio("/audio/close-chest.mp3");
+    openAudio.preload = "auto";
+    closeAudio.preload = "auto";
+    openAudio.volume = 0.25;
+    closeAudio.volume = 0.25;
+    openAudioRef.current = openAudio;
+    closeAudioRef.current = closeAudio;
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -572,6 +585,18 @@ export default function Gift3D() {
     }
   }, [isOpen]);
 
+  const playChestSound = (audioRef: React.MutableRefObject<HTMLAudioElement | null>) => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+    const clip = audio.cloneNode(true) as HTMLAudioElement;
+    clip.volume = audio.volume;
+    clip.play().catch((error) => {
+      console.error("Chest audio play failed", error);
+    });
+  };
+
   return (
     <div className="gift-canvas">
       {/* Botao inferior (abre/fecha) */}
@@ -584,9 +609,11 @@ export default function Gift3D() {
           if (isOpen) {
             setIsOpen(false);
             controlsRef.current?.reset();
+            playChestSound(closeAudioRef);
             return;
           }
           setIsOpen(true);
+          playChestSound(openAudioRef);
         }}
       >
         {isOpen ? "Fechar o presente..." : "Abrir o presente..."}
@@ -624,6 +651,7 @@ export default function Gift3D() {
             onOpen={() => {
               if (!isOpen) {
                 setIsOpen(true);
+                playChestSound(openAudioRef);
               }
             }}
           />

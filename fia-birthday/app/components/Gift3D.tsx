@@ -11,6 +11,7 @@ import LetterItem from "./LetterItem";
 import ScriptItem from "./ScriptItem";
 import PolaroidItem from "./PolaroidItem";
 import CassetteItem from "./CassetteItem";
+import ChildhoodGothicItem from "./ChildhoodGothicItem";
 
 const normalizeAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 const dampAngle = (current: number, target: number, lambda: number, delta: number) => {
@@ -557,7 +558,7 @@ export default function Gift3D() {
   const [showAction, setShowAction] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
-  const activeItem = "letter";
+  const activeItem = "childhood";
   const openAudioRef = useRef<HTMLAudioElement | null>(null);
   const closeAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -658,6 +659,9 @@ export default function Gift3D() {
         </Suspense>
         {activeItem === "letter" && (
           <LetterItem isOpen={isOpen} focusPosition={letterFocus} />
+        )}
+        {activeItem === "childhood" && (
+          <ChildhoodGothicItem isOpen={isOpen} focusPosition={letterFocus} />
         )}
         {activeItem === "script" && (
           <ScriptItem isOpen={isOpen} focusPosition={letterFocus} />

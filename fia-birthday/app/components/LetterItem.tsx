@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
+import { Text, useTexture } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -12,13 +12,29 @@ type LetterItemProps = {
 
 export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
   const groupRef = useRef<THREE.Group | null>(null);
+  const flagGroupRef = useRef<THREE.Group | null>(null);
+  const flagMaterialRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const progress = useRef(0);
+  const flagProgress = useRef(0);
+  const openStartRef = useRef<number | null>(null);
   const timeoutsRef = useRef<number[]>([]);
   const isActiveRef = useRef(false);
   const { camera } = useThree();
+  const flagTexture = useTexture("/images/slyterin-flag.svg");
 
   const startPos = useMemo(() => new THREE.Vector3(0, 0.2, 0), []);
-  const endPos = useMemo(() => focusPosition.clone(), [focusPosition]);
+  const endPos = useMemo(
+    () => focusPosition.clone().add(new THREE.Vector3(0.28, 0, 0)),
+    [focusPosition]
+  );
+  const flagSize = useMemo(() => {
+    const height = 1.5;
+    const width = height * (266 / 850);
+    return new THREE.Vector2(width, height);
+  }, []);
+  const flagEnd = useMemo(() => new THREE.Vector3(-1.05, 0.02, 0.06), []);
+  const flagStart = useMemo(() => new THREE.Vector3(-0.55, -0.08, -0.08), []);
+  const flagBaseRotation = useMemo(() => new THREE.Euler(0, 0, -0.12), []);
   const tiltQuat = useMemo(
     () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2, 0.2, -0.06)),
     []
@@ -29,10 +45,15 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
     () =>
       "Sofia,\n\n" +
       "talvez seja um pouco estranho receber um site de aniversário.\n\n" +
-      "mas você também é uma pessoa estranhamente incrível...\n\n" +
+      "mas você também não é uma pessoa completamente normal...\n\n" +
       "então, achei justo fazer algo diferente pra você.",
     []
   );
+
+  useEffect(() => {
+    flagTexture.colorSpace = THREE.SRGBColorSpace;
+    flagTexture.needsUpdate = true;
+  }, [flagTexture]);
 
   useEffect(() => {
     timeoutsRef.current.forEach((timer) => clearTimeout(timer));
@@ -40,6 +61,14 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
     if (!isOpen) {
       isActiveRef.current = false;
       progress.current = 0;
+      flagProgress.current = 0;
+      openStartRef.current = null;
+      if (flagGroupRef.current) {
+        flagGroupRef.current.visible = false;
+      }
+      if (flagMaterialRef.current) {
+        flagMaterialRef.current.opacity = 0;
+      }
       return;
     }
 
@@ -57,6 +86,9 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
   useFrame((state, delta) => {
     if (!groupRef.current) {
       return;
+    }
+    if (openStartRef.current === null && isOpen) {
+      openStartRef.current = state.clock.elapsedTime;
     }
     const target = isActiveRef.current ? 1 : 0;
     const lambda = isActiveRef.current ? 4 : 6;
@@ -78,10 +110,52 @@ export default function LetterItem({ isOpen, focusPosition }: LetterItemProps) {
     groupRef.current.scale.setScalar(0.85 + t * 0.12);
     groupRef.current.visible = t > 0.01;
 
+    if (flagGroupRef.current && flagMaterialRef.current && openStartRef.current !== null) {
+      const elapsed = state.clock.elapsedTime - openStartRef.current;
+      const flagTarget = elapsed > 3 ? 1 : 0;
+      flagProgress.current = THREE.MathUtils.damp(
+        flagProgress.current,
+        flagTarget,
+        4,
+        delta
+      );
+      const flagT = THREE.MathUtils.clamp(flagProgress.current, 0, 1);
+      const eased = THREE.MathUtils.smoothstep(flagT, 0, 1);
+      flagGroupRef.current.position.lerpVectors(flagStart, flagEnd, eased);
+      const sway = Math.sin(state.clock.elapsedTime * 0.8) * 0.03;
+      const lift = Math.sin(state.clock.elapsedTime * 1.1) * 0.01;
+      flagGroupRef.current.position.y += lift;
+      flagGroupRef.current.rotation.set(
+        flagBaseRotation.x,
+        flagBaseRotation.y,
+        flagBaseRotation.z + sway
+      );
+      flagGroupRef.current.visible = flagT > 0.01;
+      flagGroupRef.current.scale.setScalar(0.92 + eased * 0.08);
+      flagMaterialRef.current.opacity = 1;
+    }
   });
 
   return (
     <group ref={groupRef} visible={false}>
+      <group
+        ref={flagGroupRef}
+        position={flagEnd}
+        visible={false}
+      >
+        <mesh>
+          <planeGeometry args={[flagSize.x, flagSize.y]} />
+          <meshStandardMaterial
+            ref={flagMaterialRef}
+            map={flagTexture}
+            transparent
+            opacity={0}
+            roughness={0.8}
+            metalness={0.05}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
       <mesh>
         <boxGeometry args={[1.8, 1.25, 0.06]} />
         <meshStandardMaterial

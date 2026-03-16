@@ -44,7 +44,7 @@ export default function Home() {
   ];
 
   // Temporary toggle to jump straight to the 3D gift while testing.
-  const skipIntroForTests = false;
+  const skipIntroForTests = true;
 
   const [index, setIndex] = useState(0);
   const [isLineFading, setIsLineFading] = useState(false);

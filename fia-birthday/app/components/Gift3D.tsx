@@ -557,7 +557,7 @@ export default function Gift3D() {
   const [showAction, setShowAction] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const letterFocus = useMemo(() => new THREE.Vector3(0.3, 1.2, 0.4), []);
-  const activeItem = "script";
+  const activeItem = "letter";
   const openAudioRef = useRef<HTMLAudioElement | null>(null);
   const closeAudioRef = useRef<HTMLAudioElement | null>(null);
 

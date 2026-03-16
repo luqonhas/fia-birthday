@@ -1,7 +1,7 @@
 "use client";
 
 import { Text, useTexture } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -22,6 +22,8 @@ export default function ChildhoodGothicItem({
   const groupRef = useRef<THREE.Group | null>(null);
   const paperRefs = useRef<Array<THREE.Group | null>>([]);
   const polaroidRefs = useRef<Array<THREE.Group | null>>([]);
+  const focusIndexRef = useRef<number | null>(null);
+  const focusAmounts = useRef<number[]>([]);
   const progress = useRef(0);
   const openStartRef = useRef<number | null>(null);
   const timeoutsRef = useRef<number[]>([]);
@@ -92,6 +94,7 @@ export default function ChildhoodGothicItem({
       isActiveRef.current = false;
       progress.current = 0;
       openStartRef.current = null;
+      focusIndexRef.current = null;
       return;
     }
 
@@ -105,6 +108,10 @@ export default function ChildhoodGothicItem({
       timeoutsRef.current = [];
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    focusAmounts.current = polaroidPoses.map(() => 0);
+  }, [polaroidPoses]);
 
   useFrame((state, delta) => {
     if (!groupRef.current) {
@@ -178,11 +185,25 @@ export default function ChildhoodGothicItem({
       );
       const easedT = THREE.MathUtils.smoothstep(localT, 0, 1);
       ref.position.lerpVectors(polaroidStarts[index], polaroidPoses[index].position, easedT);
-      ref.rotation.copy(polaroidPoses[index].rotation);
-      ref.scale.setScalar(0.9 + easedT * 0.1);
+      const focusTarget = focusIndexRef.current === index ? 1 : 0;
+      const focusValue = THREE.MathUtils.damp(
+        focusAmounts.current[index] ?? 0,
+        focusTarget,
+        6,
+        delta
+      );
+      focusAmounts.current[index] = focusValue;
+      ref.position.lerp(new THREE.Vector3(0, 0.05, 0.22), focusValue);
+      ref.rotation.set(0, 0, THREE.MathUtils.lerp(polaroidPoses[index].rotation.z, 0, focusValue));
+      ref.scale.setScalar(0.9 + easedT * 0.1 + focusValue * 0.65);
       ref.visible = localT > 0.02;
     });
   });
+
+  const handlePolaroidClick = (event: ThreeEvent<PointerEvent>, index: number) => {
+    event.stopPropagation();
+    focusIndexRef.current = focusIndexRef.current === index ? null : index;
+  };
 
   return (
     <group ref={groupRef} visible={false}>
@@ -225,6 +246,7 @@ export default function ChildhoodGothicItem({
             polaroidRefs.current[index] = node;
           }}
           position={pose.position}
+          onPointerDown={(event) => handlePolaroidClick(event, index)}
         >
           <mesh>
             <boxGeometry args={[0.7, 0.85, 0.03]} />
